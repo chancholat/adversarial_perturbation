@@ -146,13 +146,14 @@ class Yolov8LPOCR(BaseOCR):
   def filter_targets(self, deid_images, targets):
     # Filter out the images whose targets can not be recogized in the deid images
     filtered_deid_images = []
-    filtered_targets = []
-    for deid_image, target in zip(deid_images, targets):
-      if len(target['cls']) == 0:
+    filtered_targets = {'OCR': [], 'detection': []}
+    for deid_image, ocr_target, det_target in zip(deid_images, targets['OCR'], targets['detection']):
+      if len(ocr_target['cls']) == 0:
         continue
      
       filtered_deid_images.append(deid_image)
-      filtered_targets.append(target)
+      filtered_targets['OCR'].append(ocr_target)
+      filtered_targets['detection'].append(det_target)
 
     return filtered_deid_images, filtered_targets
   

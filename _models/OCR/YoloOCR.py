@@ -115,13 +115,14 @@ class YoloLicensePlateOCR(BaseOCR):
   def filter_targets(self, deid_images, targets):
     # Filter out the images whose targets can not be recogized in the deid images
     filtered_deid_images = []
-    filtered_targets = []
+    filtered_targets = {'OCR': [], 'detection': []}
     
-    for i, (deid_image, target) in enumerate(zip(deid_images, targets)):
-      if len(target) == 0:
+    for i, (deid_image, ocr_target, det_target) in enumerate(zip(deid_images, targets['OCR'], targets['detection'])):
+      if len(ocr_target) == 0:
         continue
       filtered_deid_images.append(deid_image)
-      filtered_targets.append(target)
+      filtered_targets['OCR'].append(ocr_target)
+      filtered_targets['detection'].append(det_target)
 
     return filtered_deid_images, filtered_targets
   
