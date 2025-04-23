@@ -55,6 +55,16 @@ class BaseOCR(nn.Module):
         :return: model targets
         """
         raise NotImplementedError("This is an interface method")
+    
+    def filter_targets(self, deid_images, targets):
+        """
+        Filter out the images whose targets can not be recogized in the deid images
+        :params:
+            deid_images: list of deid images.
+            targets: list of targets.
+        :return: filtered deid images
+        """
+        return deid_images, targets
 
     def get_plate_and_bboxes(self, predictions):
         """
