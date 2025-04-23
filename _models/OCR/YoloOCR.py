@@ -28,7 +28,18 @@ def check_point_linear(x, y, x1, y1, x2, y2):
     # print("distence: ", y_pred - y)
     return(math.isclose(y_pred, y, abs_tol = 3)), y_pred - y
 
-def yoloLPOCR():
+
+class YoloLicensePlateOCR(BaseOCR):
+  def __init__(self):
+    super(YoloLicensePlateOCR, self).__init__()
+
+    self.model = self.yoloLPOCR()
+    self.model.eval()
+    self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    self.model = self.model.to(self.device)
+    self.compute_loss = ComputeLoss(self.model.model.model)
+
+  def yoloLPOCR():
     # Get the absolute path of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
@@ -46,16 +57,6 @@ def yoloLPOCR():
     
     return yolo_LP_OCR
 
-
-class YoloLicensePlateOCR(BaseOCR):
-  def __init__(self):
-    super(YoloLicensePlateOCR, self).__init__()
-
-    self.model = yoloLPOCR()
-    self.model.eval()
-    self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    self.model = self.model.to(self.device)
-    self.compute_loss = ComputeLoss(self.model.model.model)
 
   def preprocess(self, images, bboxes):
     preprocess_imgs = []
