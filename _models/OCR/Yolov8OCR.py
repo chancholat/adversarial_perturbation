@@ -170,20 +170,23 @@ class Yolov8LPOCR(BaseOCR):
       label = self.update_labels_info(label)
       label = self.transforms(label)
       targets.append(label)
+      
     return targets
 
   def postprocess(self, adv_images):
     adv_images = [adv_image.detach().cpu().numpy().transpose(1,2,0) * 255.0 for adv_image in adv_images]
     return adv_images
 
+  def applied_targets(self, targets):
+    return self.collate_fn(targets)
+
   def preprocess_batch(self, adv_images, targets):
     # preprocess batch
-    batch = self.collate_fn(targets)
     if len(adv_images.shape) == 3:
       adv_images = adv_images.unsqueeze(0)
-    batch["img"] = adv_images
-    batch["img"] = batch["img"].to(self.device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
-    return batch
+    targets["img"] = adv_images
+    targets["img"] = targets["img"].to(self.device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
+    return targets
 
   def forward(self, adv_images, targets):
     batch = self.preprocess_batch(adv_images, targets)

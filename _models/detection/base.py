@@ -55,6 +55,16 @@ class BaseDetector(nn.Module):
         :return: model targets
         """
         raise NotImplementedError("This is an interface method")
+
+    def applied_targets(self, targets):
+        """
+        Apply the final modified to the targets
+        :params:
+            targets: targets fit model and adversarial image.
+        :return: applied targets
+        """
+        raise NotImplementedError("This is an interface method")
+    
     
     def filter_targets(self, deid_images, targets):
         """
@@ -62,6 +72,6 @@ class BaseDetector(nn.Module):
         :params:
             deid_images: list of deid images.
             targets: list of targets.
-        :return: filtered deid images
+        :return: filtered deid images and targets
         """
         return deid_images, targets

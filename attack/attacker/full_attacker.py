@@ -122,17 +122,34 @@ class FullAttacker(Attacker):
     
     def filter_targets(self, deid_images, victims, targets):
         """
-        Filter out the images whose targets can not be recogized in the deid images
+        Filter out the  deid images whose targets can not be recogized by the models
         :params:
             deid_images: list of deid images.
+            victims: dictionary of victim models.
             targets: list of targets.
-        :return: filtered deid images
+        :return: filtered deid images and targets
         """
         # Filter out the images whose targets can not be recogized in the deid images
         died_images, targets = victims["detection"].filter_targets(deid_images, targets)
         if "OCR" in victims.keys():
             died_images, targets  = victims["OCR"].filter_targets(died_images, targets)
+        
         return died_images, targets
+
+    def applied_targets(self, victims, targets):
+        """
+        Apply the final modified to the targets
+        :params:
+            victims: dictionary of victim models.
+            targets: targets fit model and adversarial image.   
+        :return: applied targets
+        """
+        # Apply the final modified to the targets
+        targets['detection'] = victims["detection"].applied_targets(targets['detection'])
+        if "OCR" in victims.keys():
+            targets['OCR'] = victims["OCR"].applied_targets(targets['OCR'])
+
+        return targets
 
     def attack(self, victims, images, deid_images, optim_params={}, **kwargs):
         """
@@ -154,6 +171,13 @@ class FullAttacker(Attacker):
 
         # Filter out the images whose targets can not be recogized in the deid images
         deid_images, targets = self.filter_targets(deid_images, victims, targets)
+
+        if len(deid_images) == 0:
+            print("No images to attack")
+            return None
+        
+        # Apply the final modified to the targets
+        targets = self.applied_targets(victims, targets)
 
         # Process deid images for detection model
         deid_norm = victims["detection"].preprocess(deid_images)
