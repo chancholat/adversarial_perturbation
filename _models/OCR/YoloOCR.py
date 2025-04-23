@@ -39,7 +39,7 @@ class YoloLicensePlateOCR(BaseOCR):
     self.model = self.model.to(self.device)
     self.compute_loss = ComputeLoss(self.model.model.model)
 
-  def yoloLPOCR():
+  def yoloLPOCR(self):
     # Get the absolute path of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
@@ -111,6 +111,19 @@ class YoloLicensePlateOCR(BaseOCR):
       predictions.append(pred)
     
     return predictions
+  
+  def filter_targets(self, deid_images, targets):
+    # Filter out the images whose targets can not be recogized in the deid images
+    filtered_deid_images = []
+    filtered_targets = []
+    
+    for i, (deid_image, target) in enumerate(zip(deid_images, targets)):
+      if len(target) == 0:
+        continue
+      filtered_deid_images.append(deid_image)
+      filtered_targets.append(target)
+
+    return filtered_deid_images, filtered_targets
   
   def make_targets(self, predictions, images):
     targets = []

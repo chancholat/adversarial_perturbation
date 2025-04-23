@@ -16,7 +16,7 @@ class FullAttacker(Attacker):
     def __init__(self, optim, max_iter=250, eps=8/255, eps1=8 / 255.0, eps2= 8/255):
         super().__init__(optim, max_iter, eps, eps1, eps2)
 
-    def _generate_targets(self, victims, images):
+    def _generate_targets(self, victims, images, **kwargs):
         """
         Generate target for image using victim models
         :params:
@@ -55,7 +55,7 @@ class FullAttacker(Attacker):
             rec_predictions = victims["OCR"].detect(rec_query)
 
             # Make targets
-            ocr_targets = victims["OCR"].make_targets(rec_predictions, rec_query)
+            ocr_targets = victims["OCR"].make_targets(rec_predictions, rec_query, **kwargs)
             targets_dict["OCR"] = ocr_targets
 
         return targets_dict
@@ -119,8 +119,24 @@ class FullAttacker(Attacker):
 
         print("Number of iter: ", iter)
         return att_imgs
+    
+    def filter_targets(self, deid_images, victims, targets):
+        """
+        Filter out the images whose targets can not be recogized in the deid images
+        :params:
+            deid_images: list of deid images.
+            targets: list of targets.
+        :return: filtered deid images
+        """
+        # Filter out the images whose targets can not be recogized in the deid images
+        died_images, detect_targets = victims["detection"].filter_targets(deid_images, targets["detection"])
+        targets["detection"] = detect_targets
+        if "OCR" in victims.keys():
+            died_images, ocr_targets  = victims["OCR"].filter_targets(died_images, targets["OCR"])
+            targets["OCR"] = ocr_targets
+        return died_images, targets
 
-    def attack(self, victims, images, deid_images, optim_params={}):
+    def attack(self, victims, images, deid_images, optim_params={}, **kwargs):
         """
         Performs attack flow on image
         :params:
@@ -136,7 +152,10 @@ class FullAttacker(Attacker):
         #     "detection" in victims.keys() and "alignment" in victims.keys()
         # ), "Need both detection and alignment models to attack"
 
-        targets = self._generate_targets(victims, images)
+        targets = self._generate_targets(victims, images, **kwargs)
+
+        # Filter out the images whose targets can not be recogized in the deid images
+        deid_images, targets = self.filter_targets(deid_images, victims, targets)
 
         # Process deid images for detection model
         deid_norm = victims["detection"].preprocess(deid_images)

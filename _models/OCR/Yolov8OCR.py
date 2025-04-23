@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import os
 import math
+import logging
 
 from ._models.ultralytics.ultralytics import YOLO
 from ._models.yolov5.utils.augmentations import letterbox
@@ -12,7 +13,9 @@ from ._models.ultralytics.ultralytics.data.augment import Compose, LetterBox, Fo
 from ._models.ultralytics.ultralytics.data.dataset import YOLODataset
 from ._models.ultralytics.ultralytics.cfg import get_cfg
 
-from YoloOCR import YoloLicensePlateOCR
+from .base import BaseOCR
+
+logging.basicConfig(level=logging.INFO)
 
 def crop_image(image, bbox):
   xmin, ymin, xmax, ymax = bbox
@@ -32,8 +35,9 @@ def check_point_linear(p, lp, rb):
   return(math.isclose(y_pred, y, abs_tol = 3)), y_pred - y
 
 
-class Yolov8LPOCR(YoloLicensePlateOCR):
+class Yolov8LPOCR(BaseOCR):
   def __init__(self):
+    super(Yolov8LPOCR, self).__init__()
 
     self.model = self.yoloLPOCR()
     self.model.eval()
@@ -98,9 +102,14 @@ class Yolov8LPOCR(YoloLicensePlateOCR):
     label["im_file"] = im_file
     shape = image.shape
     label["shape"] = (shape[0], shape[1]) #hw
-    boxes = prediction.boxes 
-    cls = np.array([box.cls[0].cpu() for box in boxes], dtype=np.float32)  
-    bboxes = np.array([box.xywhn[0].cpu() for box in boxes], dtype=np.float32)
+    if len(prediction) == 0:
+      logging.warning(f"Empty prediction: no OCR results found on image {im_file}")
+      bboxes = np.array([np.zeros((0, 4))], dtype=np.float32)
+      cls = np.array([np.zeros((0, 1))], dtype=np.float32)
+    else:
+      boxes = prediction.boxes 
+      cls = np.array([box.cls[0].cpu() for box in boxes], dtype=np.float32)  
+      bboxes = np.array([box.xywhn[0].cpu() for box in boxes], dtype=np.float32)
     label["cls"] = cls
     label["bboxes"] = bboxes
     label["segments"] = []
@@ -129,6 +138,38 @@ class Yolov8LPOCR(YoloLicensePlateOCR):
       im = cv2.resize(im, (w, h), interpolation=cv2.INTER_LINEAR)
 
     return im, (h0, w0), im.shape[:2]
+  
+  @staticmethod
+  def collate_fn(batch):
+    return YOLODataset.collate_fn(batch)
+  
+  def filter_targets(self, deid_images, targets):
+    # Filter out the images whose targets can not be recogized in the deid images
+    filtered_deid_images = []
+    filtered_targets = []
+    for deid_image, target in zip(deid_images, targets):
+      if len(target['bboxes']) == 0:
+        continue
+     
+      filtered_deid_images.append(deid_image)
+      filtered_targets.append(target)
+
+    return filtered_deid_images, filtered_targets
+  
+  def make_targets(self, predictions, images, img_files):
+    targets = []
+    for prediction, image, im_file in zip(predictions, images, img_files):
+      label = self.get_label_from_prediction(prediction, image, im_file)
+      label.pop("shape", None)  # shape is for rect, remove it
+      label["img"], label["ori_shape"], label["resized_shape"] = self.load_image(image)
+      label["ratio_pad"] = (
+            label["resized_shape"][0] / label["ori_shape"][0],
+            label["resized_shape"][1] / label["ori_shape"][1],
+        )  # for evaluation
+      label = self.update_labels_info(label)
+      label = self.transforms(label)
+      targets.append(label)
+    return targets
 
   def postprocess(self, adv_images):
     adv_images = [adv_image.detach().cpu().numpy().transpose(1,2,0) * 255.0 for adv_image in adv_images]
@@ -136,11 +177,12 @@ class Yolov8LPOCR(YoloLicensePlateOCR):
 
   def preprocess_batch(self, adv_images, targets):
     # preprocess batch
+    batch = self.collate_fn(targets)
     if len(adv_images.shape) == 3:
       adv_images = adv_images.unsqueeze(0)
-    targets["img"] = adv_images
-    targets["img"] = targets["img"].to(self.device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
-    return targets
+    batch["img"] = adv_images
+    batch["img"] = batch["img"].to(self.device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
+    return batch
 
   def forward(self, adv_images, targets):
     batch = self.preprocess_batch(adv_images, targets)
@@ -166,27 +208,6 @@ class Yolov8LPOCR(YoloLicensePlateOCR):
   def detect(self, images):
     self.model.eval()
     return self.model(images, verbose=False)
-  
-  @staticmethod
-  def collate_fn(batch):
-    return YOLODataset.collate_fn(batch)
-  
-  def make_targets(self, predictions, images, img_files):
-    targets = []
-    for prediction, image, im_file in zip(predictions, images, img_files):
-      label = self.get_label_from_prediction(prediction, image, im_file)
-      label.pop("shape", None)  # shape is for rect, remove it
-      label["img"], label["ori_shape"], label["resized_shape"] = self.load_image(image)
-      label["ratio_pad"] = (
-            label["resized_shape"][0] / label["ori_shape"][0],
-            label["resized_shape"][1] / label["ori_shape"][1],
-        )  # for evaluation
-      label = self.update_labels_info(label)
-      label = self.transforms(label)
-      targets.append(label)
-
-    batch = self.collate_fn(targets)
-    return batch
 
   def sort_lp_chars(self, preds):
     for pred in preds:
@@ -238,7 +259,7 @@ class Yolov8LPOCR(YoloLicensePlateOCR):
 
     return sorted_preds
   
-  def get_plate_and_bboxes(self, predictions):
+  def get_plates_and_bboxes(self, predictions):
     lps = []
     bboxes = []
     
