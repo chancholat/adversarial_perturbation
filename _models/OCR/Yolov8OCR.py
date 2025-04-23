@@ -104,8 +104,8 @@ class Yolov8LPOCR(BaseOCR):
     label["shape"] = (shape[0], shape[1]) #hw
     if len(prediction) == 0:
       logging.warning(f"Empty prediction: no OCR results found on image {im_file}")
-      bboxes = np.array([np.zeros((0, 4))], dtype=np.float32)
-      cls = np.array([np.zeros((0, 1))], dtype=np.float32)
+      bboxes = np.zeros((0, 4), dtype=np.float32)
+      cls = np.zeros((0, 1), dtype=np.float32)
     else:
       boxes = prediction.boxes 
       cls = np.array([box.cls[0].cpu() for box in boxes], dtype=np.float32)  
@@ -148,7 +148,7 @@ class Yolov8LPOCR(BaseOCR):
     filtered_deid_images = []
     filtered_targets = []
     for deid_image, target in zip(deid_images, targets):
-      if len(target['bboxes']) == 0:
+      if len(target['cls']) == 0:
         continue
      
       filtered_deid_images.append(deid_image)
