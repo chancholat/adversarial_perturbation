@@ -126,6 +126,9 @@ class YoloLicensePlateOCR(BaseOCR):
 
     return filtered_deid_images, filtered_targets
   
+  def applied_targets(self, targets):
+    return torch.cat(targets)
+  
   def make_targets(self, predictions, images):
     targets = []
     for i, (pred, image) in  enumerate(zip(predictions, images)):
@@ -147,9 +150,8 @@ class YoloLicensePlateOCR(BaseOCR):
       target[:, 0] = i
       targets.append(target)
 
-    return torch.cat(targets)
+    return targets
   
-
   def get_plates_and_bboxes(self, predictions):
     lps = []
     bboxes = []
