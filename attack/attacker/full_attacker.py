@@ -129,11 +129,9 @@ class FullAttacker(Attacker):
         :return: filtered deid images
         """
         # Filter out the images whose targets can not be recogized in the deid images
-        died_images, detect_targets = victims["detection"].filter_targets(deid_images, targets["detection"])
-        targets["detection"] = detect_targets
+        died_images, targets = victims["detection"].filter_targets(deid_images, targets)
         if "OCR" in victims.keys():
-            died_images, ocr_targets  = victims["OCR"].filter_targets(died_images, targets["OCR"])
-            targets["OCR"] = ocr_targets
+            died_images, targets  = victims["OCR"].filter_targets(died_images, targets)
         return died_images, targets
 
     def attack(self, victims, images, deid_images, optim_params={}, **kwargs):
