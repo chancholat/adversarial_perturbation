@@ -170,7 +170,7 @@ class Yolov8LPOCR(BaseOCR):
       label = self.update_labels_info(label)
       label = self.transforms(label)
       targets.append(label)
-      
+
     return targets
 
   def postprocess(self, adv_images):

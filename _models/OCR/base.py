@@ -63,7 +63,7 @@ class BaseOCR(nn.Module):
             targets: targets fit model and adversarial image.
         :return: applied targets
         """
-        raise NotImplementedError("This is an interface method")
+        return targets
     
     def filter_targets(self, deid_images, targets):
         """

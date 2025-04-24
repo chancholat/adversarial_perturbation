@@ -120,7 +120,7 @@ class FullAttacker(Attacker):
         print("Number of iter: ", iter)
         return att_imgs
     
-    def filter_targets(self, deid_images, victims, targets):
+    def filter_targets(self, deid_images, targets, victims):
         """
         Filter out the  deid images whose targets can not be recogized by the models
         :params:
@@ -130,13 +130,13 @@ class FullAttacker(Attacker):
         :return: filtered deid images and targets
         """
         # Filter out the images whose targets can not be recogized in the deid images
-        died_images, targets = victims["detection"].filter_targets(deid_images, targets)
+        deid_images, targets = victims["detection"].filter_targets(deid_images, targets)
         if "OCR" in victims.keys():
-            died_images, targets  = victims["OCR"].filter_targets(died_images, targets)
+            deid_images, targets  = victims["OCR"].filter_targets(deid_images, targets)
         
-        return died_images, targets
+        return deid_images, targets
 
-    def applied_targets(self, victims, targets):
+    def applied_targets(self, targets, victims):
         """
         Apply the final modified to the targets
         :params:
@@ -170,14 +170,14 @@ class FullAttacker(Attacker):
         targets = self._generate_targets(victims, images, **kwargs)
 
         # Filter out the images whose targets can not be recogized in the deid images
-        deid_images, targets = self.filter_targets(deid_images, victims, targets)
+        deid_images, targets = self.filter_targets(deid_images, targets, victims)
 
         if len(deid_images) == 0:
             print("No images to attack")
             return None
         
         # Apply the final modified to the targets
-        targets = self.applied_targets(victims, targets)
+        targets = self.applied_targets(targets, victims)
 
         # Process deid images for detection model
         deid_norm = victims["detection"].preprocess(deid_images)
