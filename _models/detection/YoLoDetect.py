@@ -87,6 +87,9 @@ class YOLOv5Detector(BaseDetector):
         return predictions
     
     def applied_targets(self, targets):
+        for i, target in enumerate(targets):
+            # add image index for build target
+            target[:, 0] = i
         return torch.cat(targets, dim=0)
    
     def make_targets(self, predictions, images):
