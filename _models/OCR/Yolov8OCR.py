@@ -182,10 +182,13 @@ class Yolov8LPOCR(BaseOCR):
 
   def preprocess_batch(self, adv_images, targets):
     # preprocess batch
+    if not isinstance(targets, dict):
+      targets = self.applied_targets(targets)
     if len(adv_images.shape) == 3:
       adv_images = adv_images.unsqueeze(0)
     targets["img"] = adv_images
-    targets["img"] = targets["img"].to(self.device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
+    # targets["img"] = targets["img"].to(self.device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
+    targets["img"] = targets["img"].to(self.device, non_blocking=True).float() 
     return targets
 
   def forward(self, adv_images, targets):
