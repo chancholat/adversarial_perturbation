@@ -207,7 +207,7 @@ class Yolov8LPOCR(BaseOCR):
     loss, loss_items = self.model.model(batch)
 
     self.model.model.eval()
-    return loss
+    return loss, loss.sum().item()
 
   def detect(self, images):
     self.model.eval()
@@ -279,7 +279,6 @@ class Yolov8LPOCR(BaseOCR):
         x1, y1, x2, y2 = map(int, box.xyxy[0])
         conf = float(box.conf[0])
         cls = int(box.cls[0])
-        bboxes.append(box.xywhn[0])
         # print(cls)
         label = self.model.names[cls]  # Assumes model.names maps class index to char
 

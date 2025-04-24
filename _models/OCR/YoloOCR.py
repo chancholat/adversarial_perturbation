@@ -96,7 +96,7 @@ class YoloLicensePlateOCR(BaseOCR):
     loss, loss_items = self.compute_loss(predictions, targets)
 
     self.model.model.model.eval()
-    return loss
+    return loss, loss.item()
   
   def detect(self, images):
     self.model.eval()
@@ -127,7 +127,10 @@ class YoloLicensePlateOCR(BaseOCR):
     return filtered_deid_images, filtered_targets
   
   def applied_targets(self, targets):
-    return torch.cat(targets)
+    for i, target in enumerate(targets):
+        # add image index for build target
+        target[:, 0] = i
+    return torch.cat(targets, dim=0)
   
   def make_targets(self, predictions, images):
     targets = []

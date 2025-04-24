@@ -33,7 +33,9 @@ class BaseOCR(nn.Module):
         :params:
             adv_images: adversarial images, also stores gradients.
             targets: targets fit model and adversarial image.
-        :return: adversarial images
+        :return: 
+            loss: loss of the model.
+            loss value: loss value of the model.
         """
         raise NotImplementedError("This is an interface method")
 
@@ -75,7 +77,7 @@ class BaseOCR(nn.Module):
         """
         return deid_images, targets
 
-    def get_plate_and_bboxes(self, predictions):
+    def get_plates_and_bboxes(self, predictions):
         """
         Extract the bounding box and the plate characters from model predictions
         :params:

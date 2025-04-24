@@ -84,7 +84,7 @@ class FullAttacker(Attacker):
             with torch.set_grad_enabled(True):
 
                 # Forward face detection model
-                det_loss = victims["detection"](att_imgs, targets["detection"])
+                det_loss, det_loss_value = victims["detection"](att_imgs, targets["detection"])
 
                 if "OCR" in victims.keys():
                     # Generate cropped tensors to prepare for OCR model
@@ -93,13 +93,13 @@ class FullAttacker(Attacker):
 
                     #===== ATTACK OCR ======= #
                     # Forward ocr model
-                    ocr_loss = victims["OCR"](att_imgs, targets["OCR"])
+                    ocr_loss, ocr_loss_value = victims["OCR"](att_imgs, targets["OCR"])
 
 
                 # Sum up loss
-                if det_loss.item() / batch_size > self.eps1:
+                if det_loss_value / batch_size > self.eps1:
                     loss = det_loss
-                elif "OCR" in victims.keys() and ocr_loss.item() / batch_size > self.eps2:
+                elif "OCR" in victims.keys() and ocr_loss_value / batch_size > self.eps2:
                     loss = ocr_loss + det_loss
                 else:
                     break
