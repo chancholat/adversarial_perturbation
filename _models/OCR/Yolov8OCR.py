@@ -205,9 +205,9 @@ class Yolov8LPOCR(BaseOCR):
         m.eval()
 
     loss, loss_items = self.model.model(batch)
-
+    loss = loss.sum()
     self.model.model.eval()
-    return loss, loss.sum().item()
+    return loss, loss.item()
 
   def detect(self, images):
     self.model.eval()
