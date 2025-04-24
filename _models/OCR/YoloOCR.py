@@ -96,7 +96,7 @@ class YoloLicensePlateOCR(BaseOCR):
     loss, loss_items = self.compute_loss(predictions, targets)
 
     self.model.model.model.eval()
-    return loss
+    return loss, loss.item()
   
   def detect(self, images):
     self.model.eval()
